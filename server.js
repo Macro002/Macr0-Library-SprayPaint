@@ -1,18 +1,19 @@
 const express = require('express');
 const app = express();
-const port = process.env.PORT || 3000; // Use the port provided by the environment or 3000 if not available
+const port = process.env.PORT || 3000;
 
-app.use(express.json()); // Middleware to parse JSON bodies
+app.use(express.json());
 
-// Endpoint to handle POST requests
 app.post('/endpoint', (req, res) => {
-    console.log('Received data:', req.body); // Log the received data
-    
-    // Respond with a success message
+    console.log('Received data:', req.body);
     res.json({ status: 'success', message: 'Data received successfully.' });
 });
 
-// Start the server
+// Add this block to handle GET requests
+app.get('/endpoint', (req, res) => {
+    res.send('GET request to the endpoint is not supported. Please use POST requests.');
+});
+
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
 });
