@@ -4,6 +4,7 @@
   "description": "",
   "main": "script.js",
   "scripts": {
+    "build": "npm install --include=optional && npm run build",
     "start": "node server.js"
   },
   "keywords": [],
