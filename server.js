@@ -1,18 +1,18 @@
 const express = require('express');
-const cors = require('cors');
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000; // Use the port provided by the environment or 3000 if not available
 
-app.use(cors()); // Use this before your routes are defined
-app.use(express.json());
+app.use(express.json()); // Middleware to parse JSON bodies
 
+// Endpoint to handle POST requests
 app.post('/endpoint', (req, res) => {
-    console.log('Received from Roblox:', req.body.text);
+    console.log('Received data:', req.body); // Log the received data
     
-    // Respond back to Roblox
-    res.send('success');
+    // Respond with a success message
+    res.json({ status: 'success', message: 'Data received successfully.' });
 });
 
+// Start the server
 app.listen(port, () => {
-    console.log(`Server listening at http://localhost:${port}`);
+    console.log(`Server listening on port ${port}`);
 });
