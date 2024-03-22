@@ -18,16 +18,30 @@ app.post('/processImage', async (req, res) => {
         const imageBuffer = response.data;
 
         // Process the image with Sharp
-        const processedImageBuffer = await sharp(imageBuffer)
+        const processedImage = await sharp(imageBuffer)
             .resize(100, 100) // Resize the image to 100x100 pixels
+            .raw() // Get raw pixel data
             .toBuffer();
 
-        // Example: Convert processed image buffer to base64 (or choose your method of sending back the data)
-        const imageBase64 = processedImageBuffer.toString('base64');
+        // Convert the raw data into a 2D array of colors
+        const pixelData = [];
+        for (let i = 0; i < processedImage.length; i += 3) {
+            const row = Math.floor(i / 3 / 100);
+            const col = Math.floor(i / 3 % 100);
+            const r = processedImage[i];
+            const g = processedImage[i + 1];
+            const b = processedImage[i + 2];
 
-        // Send the processed image back as a response
-        // For demonstration, sending back a base64-encoded string; adjust according to your needs
-        res.json({ status: 'success', message: 'Image processed.', data: imageBase64 });
+            if (!pixelData[row]) {
+                pixelData[row] = [];
+            }
+
+            // Store the color data for each pixel
+            pixelData[row][col] = { r, g, b };
+        }
+
+        // Send the pixel data back as a response
+        res.json({ status: 'success', message: 'Image processed.', data: pixelData });
     } catch (error) {
         console.error('Failed to process image:', error);
         res.status(500).json({ status: 'error', message: 'Error processing image.' });
