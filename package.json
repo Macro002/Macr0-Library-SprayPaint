@@ -1,20 +1,23 @@
 {
   "name": "macr0-library-spraypaint",
   "version": "1.0.0",
-  "description": "",
-  "main": "script.js",
+  "description": "Roblox Node js server for data",
+  "main": "server.js",
   "scripts": {
-    "postinstall": "npm rebuild sharp",
-    "start": "node server.js"
+    "start": "node server.js",
+    "postinstall": "npm install --ignore-scripts=false --arch=x64 --platform=linux sharp"
   },
   "keywords": [],
-  "author": "",
+  "author": "Macr0",
   "license": "ISC",
+  "engines": {
+    "node": "20.11.0"
+  },
   "dependencies": {
     "axios": "^1.6.8",
     "cors": "^2.8.5",
-    "express": "^4.18.3",
+    "express": "^4.17.1",
     "node-fetch": "^3.3.2",
-    "sharp": "^0.33.3"
+    "sharp": "^0.29.3"
   }
 }
