@@ -34,9 +34,9 @@ app.post('/process-image', async (req, res) => {
         
         // Resize the image with Sharp while keeping the aspect ratio
         sharp(buffer)
-            .resize(50, 50, { // Resize to maximum 50x50 pixels
+            .resize(25, 25, { // Resize to maximum 25x25 pixels
                 fit: sharp.fit.inside, // Keep the aspect ratio
-                withoutEnlargement: true // Do not enlarge if the image is smaller than 50x50 pixels
+                withoutEnlargement: true // Do not enlarge if the image is smaller than 25x25 pixels
             })
             .toBuffer()
             .then(data => sharp(data).metadata()) // Get metadata of resized image
