@@ -1,7 +1,7 @@
 const express = require('express');
 const sharp = require('sharp');
 const fetch = require('node-fetch');
-const cors = require('cors'); // Include CORS package
+const cors = require('cors');
 const app = express();
 const port = 3000;
 
@@ -31,16 +31,25 @@ app.post('/process-image', async (req, res) => {
         }
 
         const buffer = await response.buffer(); // Get the image as a buffer
-
-        sharp(buffer).metadata().then(metadata => {
-            res.json({
-                width: metadata.width,
-                height: metadata.height
-            }); // Send back the dimensions
-        }).catch(error => {
-            console.error("Error processing image with Sharp:", error);
-            res.status(500).send("Error processing image");
-        });
+        
+        // Resize the image with Sharp while keeping the aspect ratio
+        sharp(buffer)
+            .resize(50, 50, { // Resize to maximum 50x50 pixels
+                fit: sharp.fit.inside, // Keep the aspect ratio
+                withoutEnlargement: true // Do not enlarge if the image is smaller than 50x50 pixels
+            })
+            .toBuffer()
+            .then(data => sharp(data).metadata()) // Get metadata of resized image
+            .then(metadata => {
+                res.json({
+                    width: metadata.width,
+                    height: metadata.height
+                }); // Send back the resized dimensions
+            })
+            .catch(error => {
+                console.error("Error processing image with Sharp:", error);
+                res.status(500).send("Error processing image");
+            });
     } catch (error) {
         console.error("Error fetching image:", error);
         res.status(500).send("Error fetching image");
