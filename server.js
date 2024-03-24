@@ -1,53 +1,33 @@
 const express = require('express');
-const axios = require('axios');
 const sharp = require('sharp');
+const fetch = require('node-fetch');
 const app = express();
-const port = process.env.PORT || 3000;
+const port = 3000; // You can use any port that's free on your machine
 
-app.use(express.json());
+app.use(express.json()); // Middleware to parse JSON bodies
 
-app.post('/processImage', async (req, res) => {
-    const { url, width = 100, height = 100 } = req.body; // Allow dynamic resizing
-    if (!url) {
-        return res.status(400).json({ status: 'error', message: 'No URL provided.' });
-    }
+app.post('/process-image', async (req, res) => {
+    const { imageUrl } = req.body; // Extract imageUrl from the request body
 
     try {
-        const response = await axios.get(url, { responseType: 'arraybuffer' });
-        if (response.data.byteLength === 0) {
-            // Check if the image data is empty
-            throw new Error('Received empty data from the image URL.');
-        }
+        const response = await fetch(imageUrl); // Fetch the image from the URL
+        const buffer = await response.buffer(); // Get the image as a buffer
 
-        const imageBuffer = response.data;
-        const processedImage = await sharp(imageBuffer)
-            .resize(width, height) // Use dynamic dimensions
-            .raw()
-            .toBuffer();
-
-        const colorData = [];
-        for (let i = 0; i < processedImage.length; i += 3) {
-            const r = processedImage[i];
-            const g = processedImage[i + 1];
-            const b = processedImage[i + 2];
-
-            // Ensure RGB values are defined
-            if (r === undefined || g === undefined || b === undefined) {
-                console.error(`Undefined RGB value found at index ${i}:`, { r, g, b });
-                continue; // Skip this iteration to avoid crashing
-            }
-
-            const hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-            colorData.push(hex);
-        }
-
-        res.json({ status: 'success', message: 'Image processed.', size: `${width}x${height}`, data: colorData });
+        sharp(buffer).metadata().then(metadata => {
+            res.json({
+                width: metadata.width,
+                height: metadata.height
+            }); // Send back the dimensions
+        }).catch(error => {
+            console.error("Error processing image with Sharp:", error);
+            res.status(500).send("Error processing image");
+        });
     } catch (error) {
-        console.error('Failed to process image:', error);
-        res.status(500).json({ status: 'error', message: 'Error processing image. ' + error.message });
+        console.error("Error fetching image:", error);
+        res.status(500).send("Error fetching image");
     }
 });
 
 app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
+    console.log(`Server listening at http://localhost:${port}`);
 });
