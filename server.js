@@ -14,30 +14,37 @@ app.post('/processImage', async (req, res) => {
 
     try {
         const response = await axios.get(url, { responseType: 'arraybuffer' });
-        const imageBuffer = response.data;
+        if (response.data.byteLength === 0) {
+            // Check if the image data is empty
+            throw new Error('Received empty data from the image URL.');
+        }
 
+        const imageBuffer = response.data;
         const processedImage = await sharp(imageBuffer)
             .resize(width, height) // Use dynamic dimensions
             .raw()
             .toBuffer();
 
-        // Initialize an array to hold color data as strings
         const colorData = [];
-
         for (let i = 0; i < processedImage.length; i += 3) {
             const r = processedImage[i];
             const g = processedImage[i + 1];
             const b = processedImage[i + 2];
-            // Convert RGB values to a hex string (or any format that suits your needs)
+
+            // Ensure RGB values are defined
+            if (r === undefined || g === undefined || b === undefined) {
+                console.error(`Undefined RGB value found at index ${i}:`, { r, g, b });
+                continue; // Skip this iteration to avoid crashing
+            }
+
             const hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
             colorData.push(hex);
         }
 
-        // Send the simplified color data back as a response
         res.json({ status: 'success', message: 'Image processed.', size: `${width}x${height}`, data: colorData });
     } catch (error) {
         console.error('Failed to process image:', error);
-        res.status(500).json({ status: 'error', message: 'Error processing image.' });
+        res.status(500).json({ status: 'error', message: 'Error processing image. ' + error.message });
     }
 });
 
