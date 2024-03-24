@@ -31,20 +31,38 @@ app.post('/process-image', async (req, res) => {
         }
 
         const buffer = await response.buffer(); // Get the image as a buffer
-        
-        // Resize the image with Sharp while keeping the aspect ratio
+
         sharp(buffer)
             .resize(25, 25, { // Resize to maximum 25x25 pixels
                 fit: sharp.fit.inside, // Keep the aspect ratio
                 withoutEnlargement: true // Do not enlarge if the image is smaller than 25x25 pixels
             })
+            .raw() // Get uncompressed pixel data
             .toBuffer()
-            .then(data => sharp(data).metadata()) // Get metadata of resized image
-            .then(metadata => {
+            .then(data => {
+                // Convert raw pixel data to an array of colors
+                const pixels = [];
+                for (let i = 0; i < data.length; i += 3) {
+                    pixels.push({
+                        r: data[i],
+                        g: data[i + 1],
+                        b: data[i + 2]
+                    });
+                }
+                return sharp(data, {
+                    raw: {
+                        width: 25,
+                        height: 25,
+                        channels: 3
+                    }
+                }).metadata().then(metadata => ({metadata, pixels}));
+            })
+            .then(({metadata, pixels}) => {
                 res.json({
                     width: metadata.width,
-                    height: metadata.height
-                }); // Send back the resized dimensions
+                    height: metadata.height,
+                    pixels: pixels // Send back the array of pixel colors
+                });
             })
             .catch(error => {
                 console.error("Error processing image with Sharp:", error);
