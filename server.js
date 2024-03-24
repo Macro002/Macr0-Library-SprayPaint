@@ -1,16 +1,35 @@
 const express = require('express');
 const sharp = require('sharp');
 const fetch = require('node-fetch');
+const cors = require('cors'); // Include CORS package
 const app = express();
-const port = 3000; // You can use any port that's free on your machine
+const port = 3000;
 
-app.use(express.json()); // Middleware to parse JSON bodies
+// Middleware to parse JSON bodies
+app.use(express.json());
+
+// Enable CORS for all requests
+app.use(cors());
 
 app.post('/process-image', async (req, res) => {
     const { imageUrl } = req.body; // Extract imageUrl from the request body
 
+    if (!imageUrl) {
+        return res.status(400).send("No imageUrl provided");
+    }
+
     try {
         const response = await fetch(imageUrl); // Fetch the image from the URL
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch the image: ${response.statusText}`);
+        }
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("image")) {
+            return res.status(400).send("URL did not point to a valid image");
+        }
+
         const buffer = await response.buffer(); // Get the image as a buffer
 
         sharp(buffer).metadata().then(metadata => {
