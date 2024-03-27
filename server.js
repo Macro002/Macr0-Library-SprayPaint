@@ -11,15 +11,18 @@ app.use(express.json());
 // Enable CORS for all requests
 app.use(cors());
 
+// In-memory storage for the last processed image data
+let lastProcessedImageData = {};
+
 app.post('/process-image', async (req, res) => {
-    const { imageUrl } = req.body; // Extract imageUrl from the request body
+    const { imageUrl } = req.body;
 
     if (!imageUrl) {
         return res.status(400).send("No imageUrl provided");
     }
 
     try {
-        const response = await fetch(imageUrl); // Fetch the image from the URL
+        const response = await fetch(imageUrl);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch the image: ${response.statusText}`);
@@ -30,17 +33,16 @@ app.post('/process-image', async (req, res) => {
             return res.status(400).send("URL did not point to a valid image");
         }
 
-        const buffer = await response.buffer(); // Get the image as a buffer
+        const buffer = await response.buffer();
 
         sharp(buffer)
-            .resize(25, 25, { // Resize to maximum 25x25 pixels
-                fit: sharp.fit.inside, // Keep the aspect ratio
-                withoutEnlargement: true // Do not enlarge if the image is smaller than 25x25 pixels
+            .resize(25, 25, {
+                fit: sharp.fit.inside,
+                withoutEnlargement: true
             })
-            .raw() // Get uncompressed pixel data
+            .raw()
             .toBuffer()
             .then(data => {
-                // Convert raw pixel data to an array of colors
                 const pixels = [];
                 for (let i = 0; i < data.length; i += 3) {
                     pixels.push({
@@ -58,11 +60,14 @@ app.post('/process-image', async (req, res) => {
                 }).metadata().then(metadata => ({metadata, pixels}));
             })
             .then(({metadata, pixels}) => {
-                res.json({
+                // Store the processed image data
+                lastProcessedImageData = {
                     width: metadata.width,
                     height: metadata.height,
-                    pixels: pixels // Send back the array of pixel colors
-                });
+                    pixels: pixels
+                };
+                // Respond with the processed image data in JSON format
+                res.json(lastProcessedImageData);
             })
             .catch(error => {
                 console.error("Error processing image with Sharp:", error);
@@ -71,6 +76,17 @@ app.post('/process-image', async (req, res) => {
     } catch (error) {
         console.error("Error fetching image:", error);
         res.status(500).send("Error fetching image");
+    }
+});
+
+// Use the same path for a GET request to retrieve the last processed image data
+app.get('/process-image', (req, res) => {
+    if (Object.keys(lastProcessedImageData).length) {
+        // Respond with the stored image data as plain text JSON
+        res.type('text/plain').send(JSON.stringify(lastProcessedImageData, null, 2));
+    } else {
+        // No image data found
+        res.status(404).send('No image data found. Please process an image first.');
     }
 });
 
